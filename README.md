@@ -147,7 +147,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 This is a helpful prompt to help LLMs understand the project during development.
 
 ```txt
-I'm working on a semantic media search project called "Semantic Media Search" built in Rust. 
+I'm working on a semantic media search project called "Semantic Gallery" built in Rust. 
 The core functionality:
 - Self-hosted service for searching personal media collections (10K images)
 - Uses CLIP model via candle/EmbedAnything for generating embeddings

@@ -1,0 +1,47 @@
+[package]
+name = "semantic-gallery"
+version = "0.1.0"
+edition = "2021"
+description = "A semantic media search tool with personal entity recognition"
+
+[dependencies]
+# Core functionality
+tokio = { version = "1.28", features = ["full"] }
+anyhow = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dotenv = "0.15"
+
+# CLI
+clap = { version = "4.3", features = ["derive"] }
+indicatif = "0.17"
+colored = "3.0"
+
+# API
+actix-web = "4.10"
+actix-multipart = "0.7"
+
+# Database
+sqlx = { version = "0.8", features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "uuid",
+    "json",
+    "chrono",
+] }
+uuid = { version = "1.16", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+deadpool-postgres = "0.14"
+
+# Image processing
+image = "0.25"
+
+# ML/Embedding TODO: use later
+# candle-core = "0.1"
+# embedanything = "0.1"
+
+[dev-dependencies]
+criterion = "0.5" # Benchmarking

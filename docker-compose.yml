@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: semantic_search
+      POSTGRES_PASSWORD: semantic_search_password
+      POSTGRES_DB: semantic_media_search
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U semantic_search -d semantic_media_search"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
