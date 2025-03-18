@@ -17,7 +17,7 @@ struct Cli {
 enum Commands {
     /// Start the API server
     Serve {
-        #[arg(short, long, default_value = "127.0.0.1")]
+        #[arg(short = 'H', long, default_value = "127.0.0.1")]
         host: String,
 
         #[arg(short, long, default_value_t = 8080)]
