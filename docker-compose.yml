@@ -10,8 +10,6 @@ services:
       POSTGRES_DB: semantic_gallery
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # TODO: Add migration management via sqlx
-      - ./migrations/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U semantic_gallery -d semantic_gallery"]
       interval: 5s

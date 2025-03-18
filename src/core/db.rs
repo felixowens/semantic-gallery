@@ -3,6 +3,12 @@ use anyhow::Result;
 use deadpool_postgres::{Config, Pool, Runtime};
 use tokio_postgres::NoTls;
 
+async fn run_migrations(pool: &Pool<Postgres>) -> Result<(), sqlx::Error> {
+    sqlx::migrate!("./migrations").run(pool).await?;
+    Ok(())
+}
+
+// TODO: run migrations on connection initialisation
 pub async fn create_pool(config: &AppConfig) -> Result<Pool> {
     let mut pg_config = tokio_postgres::config::Config::new();
     pg_config.host(&config.database.host);
