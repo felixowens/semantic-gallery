@@ -8,7 +8,9 @@ database = "semantic_gallery"
 [embedding]
 # TODO: use later
 model_path = "docker-compose.yml"
+tokenizer_path = "docker-compose.yml"
 dimension = 1536
+use_gpu = false
 
 [storage]
 media_path = "media"

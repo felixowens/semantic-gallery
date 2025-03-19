@@ -38,10 +38,17 @@ deadpool-postgres = "0.14"
 
 # Image processing
 image = "0.25"
-
-# ML/Embedding TODO: use later
-# candle-core = "0.1"
-# embedanything = "0.1"
+candle-core = { git = "https://github.com/huggingface/candle.git", version = "0.8.4", features = [
+    "cuda",
+] }
+candle-nn = { git = "https://github.com/huggingface/candle.git", version = "0.8.4", features = [
+    "cuda",
+] }
+candle-transformers = { git = "https://github.com/huggingface/candle.git", version = "0.8.4", features = [
+    "cuda",
+] }
+tokenizers = "0.21.1"
+hf-hub = "0.4.2"
 
 [dev-dependencies]
 criterion = "0.5" # Benchmarking

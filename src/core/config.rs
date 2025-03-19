@@ -1,17 +1,18 @@
 use anyhow::Result;
 use config::{Config as ConfigSource, File};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::path::PathBuf;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
     pub database: DatabaseConfig,
+    #[serde(default)]
     pub embedding: EmbeddingConfig,
     pub storage: StorageConfig,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DatabaseConfig {
     pub host: String,
     pub port: u16,
@@ -20,13 +21,24 @@ pub struct DatabaseConfig {
     pub database: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct EmbeddingConfig {
-    pub model_path: PathBuf,
-    pub dimension: usize,
+    pub model_path: Option<String>,
+    pub tokenizer_path: Option<String>,
+    pub use_gpu: bool,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+impl Default for EmbeddingConfig {
+    fn default() -> Self {
+        Self {
+            model_path: None,
+            tokenizer_path: None,
+            use_gpu: false,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct StorageConfig {
     pub media_path: PathBuf,
 }
@@ -61,16 +73,12 @@ fn validate_config(config: &Config) -> Result<(), Box<dyn Error>> {
         return Err("Database host cannot be empty".into());
     }
 
-    if !config.embedding.model_path.exists() {
-        return Err(format!(
-            "Embedding model path does not exist: {}",
-            config.embedding.model_path.display()
-        )
-        .into());
+    if !config.embedding.model_path.is_some() {
+        return Err("Embedding model path must be provided".into());
     }
 
-    if config.embedding.dimension == 0 {
-        return Err("Embedding dimension must be greater than 0".into());
+    if !config.embedding.tokenizer_path.is_some() {
+        return Err("Embedding tokenizer path must be provided".into());
     }
 
     if !config.storage.media_path.exists() {
