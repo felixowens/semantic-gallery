@@ -56,7 +56,7 @@ impl ClipEmbedder {
         Ok((input_ids, sequences.to_vec()))
     }
 
-    pub fn encode_image(&self, image: &DynamicImage) -> AnyhowResult<Tensor> {
+    fn load_image_tensor(&self, image: &DynamicImage) -> AnyhowResult<Tensor> {
         let (height, width) = (self.config.image_size, self.config.image_size);
         let img = image.resize_to_fill(
             width as u32,
@@ -72,26 +72,64 @@ impl ClipEmbedder {
         Ok(img)
     }
 
-    pub fn encode_images(&self, images: &[DynamicImage]) -> AnyhowResult<Tensor> {
+    fn load_image_tensors(&self, images: &[DynamicImage]) -> AnyhowResult<Tensor> {
         let mut tensors = vec![];
         for image in images.iter() {
-            let tensor = self.encode_image(image)?;
+            let tensor = self.load_image_tensor(image)?;
             tensors.push(tensor);
         }
         let images_tensor = Tensor::stack(&tensors, 0)?;
         Ok(images_tensor)
     }
 
-    fn tokenize_sequence(
-        sequence: &str,
-        tokenizer: &Tokenizer,
-        device: &Device,
-    ) -> anyhow::Result<Tensor> {
-        let encoding = tokenizer.encode(sequence, true).map_err(E::msg)?;
+    fn tokenize_sequence(&self, sequence: &str) -> AnyhowResult<Tensor> {
+        let encoding = self.tokenizer.encode(sequence, true).map_err(E::msg)?;
         let tokens = encoding.get_ids().to_vec();
 
-        let input_ids = Tensor::new(tokens, device)?;
+        let input_ids = Tensor::new(tokens, &self.device)?.unsqueeze(0)?;
         Ok(input_ids)
+    }
+
+    pub fn encode_image(&self, image: &DynamicImage) -> AnyhowResult<Tensor> {
+        let tensor = self.load_image_tensor(image)?;
+        // Create a batch dimension
+        let tensor = tensor.unsqueeze(0)?;
+        let embedding = self.model.get_image_features(&tensor)?;
+        Ok(embedding)
+    }
+
+    pub fn encode_images(&self, images: &[DynamicImage]) -> AnyhowResult<Tensor> {
+        let tensors = self.load_image_tensors(images)?;
+        let embedding = self.model.get_image_features(&tensors)?;
+        Ok(embedding)
+    }
+
+    pub fn encode_text(&self, text: &str) -> AnyhowResult<Tensor> {
+        let input_ids = self.tokenize_sequence(text)?;
+        let embedding = self.model.get_text_features(&input_ids)?;
+        Ok(embedding)
+    }
+
+    pub fn compute_similarity(&self, image: &DynamicImage, text: &str) -> AnyhowResult<f32> {
+        let image_embedding = self.encode_image(image)?;
+        println!(
+            "Image embedding - compute_similarity: {:?}",
+            image_embedding
+        );
+        let text_embedding = self.encode_text(text)?;
+        println!("Text embedding - compute_similarity: {:?}", text_embedding);
+
+        let similarity = image_embedding.matmul(&text_embedding.t()?)?;
+        println!("Similarity - compute_similarity: {:?}", similarity);
+
+        // Extract the scalar value correctly from the 1x1 tensor
+        let similarity_tensor = similarity.get(0)?;
+        println!("similarity_tensor - compute_similarity: {similarity_tensor}");
+
+        let similarity_score = similarity_tensor.get(0)?.to_scalar::<f32>()?;
+        println!("similarity_score - compute_similarity: {similarity_score}");
+
+        Ok(similarity_score)
     }
 }
 

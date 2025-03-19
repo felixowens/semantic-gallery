@@ -29,6 +29,21 @@ pub async fn process_image(image: DynamicImage, config: &Config) -> Result<()> {
     let embedding = clip_model.encode_image(&image)?;
 
     println!("Embedding: {:?}", embedding);
+    // TODO: testing, will remove
+    let text_embedding_1 = clip_model.encode_text("man")?;
+    println!("Text embedding - man: {:?}", text_embedding_1);
+    let similarity_1 = clip_model.compute_similarity(&image, "man")?;
+    println!("Similarity - man: {:?}", similarity_1);
+
+    let text_embedding_2 = clip_model.encode_text("woman")?;
+    println!("Text embedding - woman: {:?}", text_embedding_2);
+    let similarity_2 = clip_model.compute_similarity(&image, "woman")?;
+    println!("Similarity - woman: {:?}", similarity_2);
+
+    let text_embedding_3 = clip_model.encode_text("dog food")?;
+    println!("Text embedding: {:?}", text_embedding_3);
+    let similarity_3 = clip_model.compute_similarity(&image, "dog food")?;
+    println!("Similarity - dog food: {:?}", similarity_3);
 
     // Save the embedding to the database
     todo!("Save the embedding to the database");

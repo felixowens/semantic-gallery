@@ -6,9 +6,8 @@ password = "postgres"
 database = "semantic_gallery"
 
 [embedding]
-# TODO: use later
-model_path = "docker-compose.yml"
-tokenizer_path = "docker-compose.yml"
+model_path = "/home/felix/projects/semantic-gallery/tmp/models/clip/model.safetensors"
+tokenizer_path = "/home/felix/projects/semantic-gallery/tmp/models/clip/tokenizer.json"
 dimension = 1536
 use_gpu = false
 
