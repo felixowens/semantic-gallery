@@ -95,40 +95,34 @@ impl ClipEmbedder {
         // Create a batch dimension
         let tensor = tensor.unsqueeze(0)?;
         let embedding = self.model.get_image_features(&tensor)?;
-        Ok(embedding)
+        let embedding_normalized = clip::div_l2_norm(&embedding)?;
+        Ok(embedding_normalized)
     }
 
     pub fn encode_images(&self, images: &[DynamicImage]) -> AnyhowResult<Tensor> {
         let tensors = self.load_image_tensors(images)?;
         let embedding = self.model.get_image_features(&tensors)?;
-        Ok(embedding)
+        let embedding_normalized = clip::div_l2_norm(&embedding)?;
+        Ok(embedding_normalized)
     }
 
     pub fn encode_text(&self, text: &str) -> AnyhowResult<Tensor> {
         let input_ids = self.tokenize_sequence(text)?;
         let embedding = self.model.get_text_features(&input_ids)?;
-        Ok(embedding)
+        let embedding_normalized = clip::div_l2_norm(&embedding)?;
+        Ok(embedding_normalized)
     }
 
     pub fn compute_similarity(&self, image: &DynamicImage, text: &str) -> AnyhowResult<f32> {
         let image_embedding = self.encode_image(image)?;
-        println!(
-            "Image embedding - compute_similarity: {:?}",
-            image_embedding
-        );
         let text_embedding = self.encode_text(text)?;
-        println!("Text embedding - compute_similarity: {:?}", text_embedding);
 
-        let similarity = image_embedding.matmul(&text_embedding.t()?)?;
-        println!("Similarity - compute_similarity: {:?}", similarity);
+        // Compute similarity matrix
+        let similarity = text_embedding.matmul(&image_embedding.t()?)?;
 
-        // Extract the scalar value correctly from the 1x1 tensor
+        // // Extract the scalar value correctly from the 1x1 tensor
         let similarity_tensor = similarity.get(0)?;
-        println!("similarity_tensor - compute_similarity: {similarity_tensor}");
-
         let similarity_score = similarity_tensor.get(0)?.to_scalar::<f32>()?;
-        println!("similarity_score - compute_similarity: {similarity_score}");
-
         Ok(similarity_score)
     }
 }
