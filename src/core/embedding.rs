@@ -117,12 +117,16 @@ impl ClipEmbedder {
         let image_embedding = self.encode_image(image)?;
         let text_embedding = self.encode_text(text)?;
 
-        // Compute similarity matrix
-        let similarity = text_embedding.matmul(&image_embedding.t()?)?;
+        self.compute_similarity_from_embeddings(&image_embedding, &text_embedding)
+    }
 
-        // // Extract the scalar value correctly from the 1x1 tensor
-        let similarity_tensor = similarity.get(0)?;
-        let similarity_score = similarity_tensor.get(0)?.to_scalar::<f32>()?;
+    pub fn compute_similarity_from_embeddings(
+        &self,
+        image_embedding: &Tensor,
+        text_embedding: &Tensor,
+    ) -> AnyhowResult<f32> {
+        let similarity = text_embedding.matmul(&image_embedding.t()?)?;
+        let similarity_score = similarity.squeeze(0)?.squeeze(0)?.to_scalar::<f32>()?;
         Ok(similarity_score)
     }
 }
