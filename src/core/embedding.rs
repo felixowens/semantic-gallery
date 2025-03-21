@@ -39,10 +39,11 @@ impl ClipEmbedder {
         );
         let img = img.to_rgb8();
         let img = img.into_raw();
-        let img = Tensor::from_vec(img, (height, width, 3), &Device::Cpu)?
+        let img = Tensor::from_vec(img, (height, width, 3), &self.device)?
             .permute((2, 0, 1))?
             .to_dtype(DType::F32)?
             .affine(2. / 255., -1.)?;
+
         Ok(img)
     }
 

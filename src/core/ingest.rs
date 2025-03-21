@@ -22,7 +22,7 @@ pub async fn process_image(image: DynamicImage, config: &Config) -> Result<()> {
             .as_ref()
             .map(Path::new)
             .unwrap(),
-        Device::Cpu,
+        Device::cuda_if_available(0)?,
     )?;
 
     // Generate the embedding
