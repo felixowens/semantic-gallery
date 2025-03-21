@@ -52,3 +52,4 @@ hf-hub = "0.4.2"
 
 [dev-dependencies]
 criterion = "0.5" # Benchmarking
+approx = "0.5"    # Approximate equality for tests

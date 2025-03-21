@@ -74,18 +74,69 @@ impl ClipEmbedder {
         let image_embedding = self.encode_image(image)?;
         let text_embedding = self.encode_text(text)?;
 
-        self.cosine_similarity(&image_embedding, &text_embedding)
+        cosine_similarity(&image_embedding, &text_embedding)
+    }
+}
+
+/// Compute the cosine similarity between two tensors.
+fn cosine_similarity(emb1: &Tensor, emb2: &Tensor) -> AnyhowResult<f32> {
+    let sum = emb1
+        .matmul(&emb2.transpose(0, 1)?)?
+        .sum_all()?
+        .to_scalar::<f32>()?;
+    Ok(sum)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use approx::assert_relative_eq;
+    use candle_core::Tensor;
+
+    #[test]
+    fn test_cosine_similarity_identical_vectors() -> AnyhowResult<()> {
+        // Two identical vectors should have similarity of 1.0
+        let vec = Tensor::new(&[1.0f32; 512], &Device::Cpu)?.unsqueeze(0)?;
+        let normalized_vec = clip::div_l2_norm(&vec)?;
+        let result = cosine_similarity(&normalized_vec, &normalized_vec)?;
+        assert_relative_eq!(result, 1.0, epsilon = 1e-5);
+        Ok(())
     }
 
-    pub fn cosine_similarity(
-        &self,
-        image_embedding: &Tensor,
-        text_embedding: &Tensor,
-    ) -> AnyhowResult<f32> {
-        let sum = image_embedding
-            .matmul(&text_embedding.transpose(0, 1)?)?
-            .sum_all()?
-            .to_scalar::<f32>()?;
-        Ok(sum)
+    #[test]
+    fn test_cosine_similarity_orthogonal_vectors() -> AnyhowResult<()> {
+        // Create truly orthogonal vectors instead of using a zero vector
+        let mut vec1_data = vec![0.0f32; 512];
+        let mut vec2_data = vec![0.0f32; 512];
+
+        // Set first half of vec1 to 1.0
+        for i in 0..256 {
+            vec1_data[i] = 1.0;
+        }
+
+        // Set second half of vec2 to 1.0
+        for i in 256..512 {
+            vec2_data[i] = 1.0;
+        }
+
+        let vec1 = Tensor::new(&vec1_data[..], &Device::Cpu)?.unsqueeze(0)?;
+        let vec2 = Tensor::new(&vec2_data[..], &Device::Cpu)?.unsqueeze(0)?;
+        let normalized_vec1 = clip::div_l2_norm(&vec1)?;
+        let normalized_vec2 = clip::div_l2_norm(&vec2)?;
+        let result = cosine_similarity(&normalized_vec1, &normalized_vec2)?;
+        assert_relative_eq!(result, 0.0, epsilon = 1e-5);
+        Ok(())
+    }
+
+    #[test]
+    fn test_cosine_similarity_opposite_vectors() -> AnyhowResult<()> {
+        // Opposite vectors should have similarity of -1.0
+        let vec1 = Tensor::new(&[1.0f32; 512], &Device::Cpu)?.unsqueeze(0)?;
+        let vec2 = Tensor::new(&[-1.0f32; 512], &Device::Cpu)?.unsqueeze(0)?;
+        let normalized_vec1 = clip::div_l2_norm(&vec1)?;
+        let normalized_vec2 = clip::div_l2_norm(&vec2)?;
+        let result = cosine_similarity(&normalized_vec1, &normalized_vec2)?;
+        assert_relative_eq!(result, -1.0, epsilon = 1e-5);
+        Ok(())
     }
 }
