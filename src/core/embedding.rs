@@ -30,32 +30,6 @@ impl ClipEmbedder {
         })
     }
 
-    fn tokenize_sequences(&self, sequences: &[String]) -> AnyhowResult<(Tensor, Vec<String>)> {
-        let pad_id = *self
-            .tokenizer
-            .get_vocab(true)
-            .get("<|endoftext|>")
-            .ok_or(E::msg("No pad token"))?;
-
-        let mut tokens = vec![];
-        for seq in sequences {
-            let encoding = self.tokenizer.encode(seq.clone(), true).map_err(E::msg)?;
-            tokens.push(encoding.get_ids().to_vec());
-        }
-
-        let max_len = tokens.iter().map(|v| v.len()).max().unwrap_or(0);
-        // Pad the sequences to have the same length
-        for token_vec in tokens.iter_mut() {
-            let len_diff = max_len - token_vec.len();
-            if len_diff > 0 {
-                token_vec.extend(vec![pad_id; len_diff]);
-            }
-        }
-
-        let input_ids = Tensor::new(tokens, &self.device)?;
-        Ok((input_ids, sequences.to_vec()))
-    }
-
     fn load_image_tensor(&self, image: &DynamicImage) -> AnyhowResult<Tensor> {
         let (height, width) = (self.config.image_size, self.config.image_size);
         let img = image.resize_to_fill(
@@ -70,16 +44,6 @@ impl ClipEmbedder {
             .to_dtype(DType::F32)?
             .affine(2. / 255., -1.)?;
         Ok(img)
-    }
-
-    fn load_image_tensors(&self, images: &[DynamicImage]) -> AnyhowResult<Tensor> {
-        let mut tensors = vec![];
-        for image in images.iter() {
-            let tensor = self.load_image_tensor(image)?;
-            tensors.push(tensor);
-        }
-        let images_tensor = Tensor::stack(&tensors, 0)?;
-        Ok(images_tensor)
     }
 
     fn tokenize_sequence(&self, sequence: &str) -> AnyhowResult<Tensor> {
@@ -99,13 +63,6 @@ impl ClipEmbedder {
         Ok(embedding_normalized)
     }
 
-    pub fn encode_images(&self, images: &[DynamicImage]) -> AnyhowResult<Tensor> {
-        let tensors = self.load_image_tensors(images)?;
-        let embedding = self.model.get_image_features(&tensors)?;
-        let embedding_normalized = clip::div_l2_norm(&embedding)?;
-        Ok(embedding_normalized)
-    }
-
     pub fn encode_text(&self, text: &str) -> AnyhowResult<Tensor> {
         let input_ids = self.tokenize_sequence(text)?;
         let embedding = self.model.get_text_features(&input_ids)?;
@@ -117,30 +74,18 @@ impl ClipEmbedder {
         let image_embedding = self.encode_image(image)?;
         let text_embedding = self.encode_text(text)?;
 
-        self.compute_similarity_from_embeddings(&image_embedding, &text_embedding)
+        self.cosine_similarity(&image_embedding, &text_embedding)
     }
 
-    pub fn compute_similarity_from_embeddings(
+    pub fn cosine_similarity(
         &self,
         image_embedding: &Tensor,
         text_embedding: &Tensor,
     ) -> AnyhowResult<f32> {
-        let similarity = text_embedding.matmul(&image_embedding.t()?)?;
-        let similarity_score = similarity.squeeze(0)?.squeeze(0)?.to_scalar::<f32>()?;
-        Ok(similarity_score)
+        let sum = image_embedding
+            .matmul(&text_embedding.transpose(0, 1)?)?
+            .sum_all()?
+            .to_scalar::<f32>()?;
+        Ok(sum)
     }
-}
-
-pub fn download_clip_model() -> AnyhowResult<(std::path::PathBuf, std::path::PathBuf)> {
-    let api = hf_hub::api::sync::Api::new()?;
-    let api = api.repo(hf_hub::Repo::with_revision(
-        "openai/clip-vit-base-patch32".to_string(),
-        hf_hub::RepoType::Model,
-        "refs/pr/15".to_string(),
-    ));
-
-    let model_path = api.get("model.safetensors")?;
-    let tokenizer_path = api.get("tokenizer.json")?;
-
-    Ok((model_path, tokenizer_path))
 }
