@@ -1,43 +1,27 @@
-use crate::core::config::Config;
-use crate::core::embedding::ClipEmbedder;
 use crate::core::ingest::process_image;
 use crate::core::media::extract_media_details_from_path;
-use candle_core::Device;
+use crate::core::state::AppState;
 use std::error::Error;
-use std::path::Path;
 use std::path::PathBuf;
-use tracing::info;
 
 // TODO: support either a single image or a directory
-pub async fn ingest(path: PathBuf, recursive: bool, config: &Config) -> Result<(), Box<dyn Error>> {
+pub async fn ingest(
+    path: PathBuf,
+    recursive: bool,
+    app_state: &AppState,
+) -> Result<(), Box<dyn Error>> {
     // Load the image and extract details
     let media_details = extract_media_details_from_path(&path)?;
 
     // Process the image to create embedding and save to the database
-    process_image(media_details, config).await?;
+    process_image(media_details, &app_state).await?;
 
     Ok(())
 }
 
-pub async fn search(query: String, limit: usize, config: &Config) -> Result<(), Box<dyn Error>> {
-    // Create a database connection pool
-    let pool = crate::core::db::create_pool(config).await?;
-    crate::core::db::check_connection(&pool).await?;
-
-    // Load the CLIP model and tokenizer
-    let clip_model = ClipEmbedder::new(
-        config.embedding.model_path.as_ref().map(Path::new).unwrap(),
-        config
-            .embedding
-            .tokenizer_path
-            .as_ref()
-            .map(Path::new)
-            .unwrap(),
-        Device::cuda_if_available(0)?,
-    )?;
-
+pub async fn search(query: String, limit: usize, state: &AppState) -> Result<(), Box<dyn Error>> {
     // Generate text embedding for the query
-    let text_embedding = clip_model.encode_text(&query)?;
+    let text_embedding = state.embedder.encode_text(&query)?;
     let embedding_vec = text_embedding.flatten_all()?.to_vec1::<f32>()?;
 
     // Search for similar images in the database using vector similarity
@@ -53,15 +37,15 @@ pub async fn search(query: String, limit: usize, config: &Config) -> Result<(), 
         &embedding_vec as &[f32],
         limit as i64
     )
-    .fetch_all(&pool)
+    .fetch_all(&state.db_pool)
     .await?;
 
     // Display the results
     if results.is_empty() {
-        info!("No results found for query: \"{}\"", query);
+        println!("No results found for query: \"{}\"", query);
     } else {
-        info!("Search results for: \"{}\"", query);
-        info!("{:-<50}", "");
+        println!("Search results for: \"{}\"", query);
+        println!("{:-<50}", "");
 
         for (i, result) in results.iter().enumerate() {
             let similarity_percentage = result.similarity.map(|s| s * 100.0).unwrap_or(0.0);
@@ -83,13 +67,11 @@ pub async fn tag(
     media_id: String,
     add: Vec<String>,
     remove: Vec<String>,
-    config: &Config,
+    state: &AppState,
 ) -> Result<(), Box<dyn Error>> {
-    // TODO: Implement tag management
     todo!("Implement tag management")
 }
 
-pub async fn list_tags(config: &Config) -> Result<(), Box<dyn Error>> {
-    // TODO: Implement tag listing
+pub async fn list_tags(state: &AppState) -> Result<(), Box<dyn Error>> {
     todo!("Implement tag listing")
 }

@@ -3,3 +3,4 @@ pub mod db;
 pub mod embedding;
 pub mod ingest;
 pub mod media;
+pub mod state;

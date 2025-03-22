@@ -67,21 +67,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Load configuration
     let config = core::config::load_config()?;
 
+    // Initialize application state
+    let app_state = core::state::AppState::new(config).await?;
+
     // Parse command line arguments
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Serve { host, port } => {
             info!("Starting API server at {}:{}", host, port);
-            api::run_server(host, port, config).await?;
+            api::run_server(host, port, app_state).await?;
         }
         Commands::Ingest { path, recursive } => {
             info!("Ingesting media from {:?} (recursive: {})", path, recursive);
-            cli::commands::ingest(path, recursive, &config).await?;
+            cli::commands::ingest(path, recursive, &app_state).await?;
         }
         Commands::Search { query, limit } => {
             info!("Searching for: {}", query);
-            cli::commands::search(query, limit, &config).await?;
+            cli::commands::search(query, limit, &app_state).await?;
         }
         Commands::Tag {
             media_id,
@@ -89,11 +92,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             remove,
         } => {
             info!("Managing tags for media: {}", media_id);
-            cli::commands::tag(media_id, add, remove, &config).await?;
+            cli::commands::tag(media_id, add, remove, &app_state).await?;
         }
         Commands::ListTags => {
             info!("Listing all tags");
-            cli::commands::list_tags(&config).await?;
+            cli::commands::list_tags(&app_state).await?;
         }
     }
 
