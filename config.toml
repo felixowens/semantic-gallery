@@ -1,3 +1,4 @@
+# TODO: source secrets from environment variables in prod
 [database]
 host = "localhost"
 port = 5432

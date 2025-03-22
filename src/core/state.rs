@@ -21,6 +21,7 @@ impl AppState {
         let db_pool = crate::core::db::create_pool(&config).await?;
         crate::core::db::check_connection(&db_pool).await?;
 
+        // TODO: can use a job queue to speed up ingestion and load multiple models in parallel depending on VRAM available and number of jobs.
         // Initialize CLIP model
         let embedder = ClipEmbedder::new(
             config.embedding.model_path.as_ref().map(Path::new).unwrap(),

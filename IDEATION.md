@@ -5,6 +5,7 @@ This is a space for brainstorming and ideation - excuse the mess.
 ## Inbox
 
 - Look at [Immich subreddit](https://www.reddit.com/r/immich/) and the [GitHub page](https://github.com/immich-app/immich/discussions/categories/feature-request) for feature requests.
+- See if it's feasible to fine-tune a clip model for other use cases. E.g. this guy made one for [fashion](https://huggingface.co/Marqo/marqo-fashionCLIP).
 
 ## Feature ideas
 

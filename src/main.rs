@@ -32,6 +32,13 @@ enum Commands {
 
         #[arg(short, long)]
         recursive: bool,
+
+        #[arg(
+            short,
+            long,
+            help = "Maximum recursion depth when scanning directories"
+        )]
+        max_depth: Option<usize>,
     },
 
     /// Search for media
@@ -78,9 +85,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
             info!("Starting API server at {}:{}", host, port);
             api::run_server(host, port, app_state).await?;
         }
-        Commands::Ingest { path, recursive } => {
-            info!("Ingesting media from {:?} (recursive: {})", path, recursive);
-            cli::commands::ingest(path, recursive, &app_state).await?;
+        Commands::Ingest {
+            path,
+            recursive,
+            max_depth,
+        } => {
+            info!(
+                "Ingesting media from {:?} (recursive: {}, max_depth: {})",
+                path,
+                recursive,
+                max_depth.unwrap_or(5)
+            );
+            cli::commands::ingest(path, recursive, &app_state, max_depth).await?;
         }
         Commands::Search { query, limit } => {
             info!("Searching for: {}", query);
