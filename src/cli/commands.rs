@@ -65,10 +65,11 @@ pub async fn search(query: String, limit: usize, config: &Config) -> Result<(), 
         for (i, result) in results.iter().enumerate() {
             let similarity_percentage = result.similarity.map(|s| s * 100.0).unwrap_or(0.0);
             print!(
-                "{}. {} (ID: {})\n   Path: {}\n   Similarity: {:.2}%\n",
+                "{}. {} (ID: {})\n   Path: \x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\\n   Similarity: {:.2}%\n",
                 i + 1,
                 result.filename,
                 result.id,
+                result.file_path,
                 result.file_path,
                 similarity_percentage
             );
