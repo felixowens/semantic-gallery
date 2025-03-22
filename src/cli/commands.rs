@@ -1,6 +1,7 @@
 use crate::core::config::Config;
 use crate::core::embedding::ClipEmbedder;
 use crate::core::ingest::process_image;
+use crate::core::media::extract_media_details_from_path;
 use candle_core::Device;
 use std::error::Error;
 use std::path::Path;
@@ -9,11 +10,11 @@ use tracing::info;
 
 // TODO: support either a single image or a directory
 pub async fn ingest(path: PathBuf, recursive: bool, config: &Config) -> Result<(), Box<dyn Error>> {
-    // Load the image
-    let image = image::ImageReader::open(path)?.decode()?;
+    // Load the image and extract details
+    let media_details = extract_media_details_from_path(&path)?;
 
     // Process the image to create embedding and save to the database
-    process_image(image, config).await?;
+    process_image(media_details, config).await?;
 
     Ok(())
 }
@@ -65,11 +66,10 @@ pub async fn search(query: String, limit: usize, config: &Config) -> Result<(), 
         for (i, result) in results.iter().enumerate() {
             let similarity_percentage = result.similarity.map(|s| s * 100.0).unwrap_or(0.0);
             print!(
-                "{}. {} (ID: {})\n   Path: \x1b]8;;{}\x1b\\{}\x1b]8;;\x1b\\\n   Similarity: {:.2}%\n",
+                "{}. {} (ID: {})\n   Path: file://{}\n   Similarity: {:.2}%\n",
                 i + 1,
                 result.filename,
                 result.id,
-                result.file_path,
                 result.file_path,
                 similarity_percentage
             );
