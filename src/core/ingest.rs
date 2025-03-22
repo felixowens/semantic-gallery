@@ -69,8 +69,8 @@ pub async fn process_image(image: DynamicImage, config: &Config) -> Result<()> {
         "#,
         embedding_id,
         media_id,
-        "clip-vit-base-patch32",
-        "v1",
+        "clip-vit-base-patch32", // TODO: get from config
+        "v1",                    // TODO: get from config
         &embedding_vec as &[f32]
     )
     .execute(&mut *tx)

@@ -3,11 +3,6 @@ use anyhow::Result;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use std::time::Duration;
 
-pub async fn run_migrations(pool: &PgPool) -> Result<()> {
-    sqlx::migrate!("./migrations").run(pool).await?;
-    Ok(())
-}
-
 pub async fn create_pool(config: &AppConfig) -> Result<PgPool> {
     let connection_string = format!(
         "postgres://{}:{}@{}:{}/{}",
