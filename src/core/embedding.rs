@@ -30,6 +30,8 @@ impl ClipEmbedder {
         })
     }
 
+    /// Load an image into a tensor.
+    /// The image is resized to the model's image size and converted to RGB.
     fn load_image_tensor(&self, image: &DynamicImage) -> AnyhowResult<Tensor> {
         let (height, width) = (self.config.image_size, self.config.image_size);
         let img = image.resize_to_fill(
