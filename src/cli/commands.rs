@@ -3,6 +3,7 @@ use crate::core::ingest::process_image;
 use std::error::Error;
 use std::path::PathBuf;
 
+// TODO: support either a single image or a directory
 pub async fn ingest(path: PathBuf, recursive: bool, config: &Config) -> Result<(), Box<dyn Error>> {
     // Load the image
     let image = image::ImageReader::open(path)?.decode()?;

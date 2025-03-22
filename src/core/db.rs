@@ -1,30 +1,34 @@
 use crate::core::config::Config as AppConfig;
 use anyhow::Result;
-use deadpool_postgres::{Config, Pool, Runtime};
-use tokio_postgres::NoTls;
+use sqlx::postgres::{PgPool, PgPoolOptions};
+use std::time::Duration;
 
-async fn run_migrations(pool: &Pool<Postgres>) -> Result<(), sqlx::Error> {
+pub async fn run_migrations(pool: &PgPool) -> Result<()> {
     sqlx::migrate!("./migrations").run(pool).await?;
     Ok(())
 }
 
-// TODO: run migrations on connection initialisation
-pub async fn create_pool(config: &AppConfig) -> Result<Pool> {
-    let mut pg_config = tokio_postgres::config::Config::new();
-    pg_config.host(&config.database.host);
-    pg_config.port(config.database.port);
-    pg_config.user(&config.database.username);
-    pg_config.password(&config.database.password);
-    pg_config.dbname(&config.database.database);
+pub async fn create_pool(config: &AppConfig) -> Result<PgPool> {
+    let connection_string = format!(
+        "postgres://{}:{}@{}:{}/{}",
+        config.database.username,
+        config.database.password,
+        config.database.host,
+        config.database.port,
+        config.database.database
+    );
 
-    let pool_config = Config::new();
-    Pool::builder(pool_config)
-        .build(pg_config, NoTls, Runtime::Tokio1)
-        .map_err(|e| anyhow::anyhow!("Failed to create database pool: {}", e))
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .acquire_timeout(Duration::from_secs(3))
+        .connect(&connection_string)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to create database pool: {}", e))?;
+
+    Ok(pool)
 }
 
-pub async fn check_connection(pool: &Pool) -> Result<()> {
-    let client = pool.get().await?;
-    client.execute("SELECT 1", &[]).await?;
+pub async fn check_connection(pool: &PgPool) -> Result<()> {
+    sqlx::query("SELECT 1").execute(pool).await?;
     Ok(())
 }

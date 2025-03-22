@@ -5,6 +5,7 @@ mod utils;
 
 use clap::{Parser, Subcommand};
 use std::error::Error;
+use tracing::info;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -71,15 +72,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     match cli.command {
         Commands::Serve { host, port } => {
-            println!("Starting API server at {}:{}", host, port);
+            info!("Starting API server at {}:{}", host, port);
             api::run_server(host, port, config).await?;
         }
         Commands::Ingest { path, recursive } => {
-            println!("Ingesting media from {:?} (recursive: {})", path, recursive);
+            info!("Ingesting media from {:?} (recursive: {})", path, recursive);
             cli::commands::ingest(path, recursive, &config).await?;
         }
         Commands::Search { query, limit } => {
-            println!("Searching for: {}", query);
+            info!("Searching for: {}", query);
             cli::commands::search(query, limit, &config).await?;
         }
         Commands::Tag {
@@ -87,11 +88,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             add,
             remove,
         } => {
-            println!("Managing tags for media: {}", media_id);
+            info!("Managing tags for media: {}", media_id);
             cli::commands::tag(media_id, add, remove, &config).await?;
         }
         Commands::ListTags => {
-            println!("Listing all tags");
+            info!("Listing all tags");
             cli::commands::list_tags(&config).await?;
         }
     }

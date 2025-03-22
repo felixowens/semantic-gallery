@@ -1,8 +1,8 @@
 [database]
 host = "localhost"
 port = 5432
-username = "postgres"
-password = "postgres"
+username = "semantic_gallery"
+password = "semantic_gallery_password"
 database = "semantic_gallery"
 
 [embedding]
